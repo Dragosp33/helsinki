@@ -69,9 +69,17 @@ const App = () => {
       }, 3000);
     
     })
-    .catch(() => {
-      changeNotification('error', `Person ${persoana.name} has been already deleted from the server.`)
-      setPersons(persons.filter(n => n.id !== changedPersoana.id))
+    .catch(error => {
+      //console.log(`eroare: ${error}`)
+     
+     // changeNotification('error', `Person ${persoana.name} has been already deleted from the server.`)
+      if (error.response.data.error.toLowerCase().includes('validation failed')) {
+        changeNotification('error', `the Person '${personObject.name}' could not be updated on server, number ${personObject.number} is not a valid phone number.`)
+      }
+      else {
+        changeNotification('error', `Person ${persoana.name} has been already deleted from the server.`)
+      }
+      //setPersons(persons.filter(n => n.id !== changedPersoana.id))
     })
 
 
@@ -82,7 +90,7 @@ const App = () => {
   Persons
     .create(personObject)
     .then(returnedPerson => {
-      console.log(`creare persoana: ${returnedPerson}`);
+      //console.log(`creare persoana: ${returnedPerson}`);
 
       setPersons(persons.concat(returnedPerson))
       setMessage(`A fost adaugata persoana ${returnedPerson.name}`)
@@ -100,18 +108,26 @@ const App = () => {
 
 
     })
-    .catch(() => {
+    .catch(error => {
+      //console.log(`error.response.data.error: `, error.response.data.error);
+      
       setMessageType('error');
-      alert(
-        `the Person '${personObject.name}' could not be added on server`
-      )
+      if (error.response.data.error.includes('name: Path `name`')) {
+        changeNotification('error', `the Person '${personObject.name}' could not be added on server, name should be at least 3 chars long`)
+      }
+      else {
+        changeNotification('error', `number ${personObject.number} is not a valid phone number.`)
+      }
+      /*alert(
+        `the Person '${personObject.name}' could not be added on server, name should be at least 3 chars long`
+      )*/
      
     })
   }
 }
 
   const changeNotification = (type, message) => {
-    console.log(type, message)
+   // console.log(type, message)
     setMessage(message);
     setMessageType(type);
     setNotificationVisible(true);
