@@ -1,0 +1,3 @@
+@id = 64ba93f33bc66824de4cdd04
+GET http://localhost:3001/api/persons/{{id}}
+
