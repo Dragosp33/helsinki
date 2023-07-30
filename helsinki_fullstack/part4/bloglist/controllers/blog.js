@@ -37,7 +37,8 @@ blogsRouter.post('/', userExtractor, async (request, response) => {
   // console.log('inainte sa intre in if ', blog)
   // console.log('ARE?????,', Object.hasOwn(blogObject, 'title'))4
   if (!Object.hasOwn(blogObject, 'title') ||
-  !Object.hasOwn(blogObject, 'url') ) {
+  !Object.hasOwn(blogObject, 'url') ||
+  blogObject.title === '' || blogObject.url === '') {
     response.status(400).send({ message: 'Blog should have a title and url' })
   } else {
     if (!Object.hasOwn(blogObject, 'likes')) {
@@ -63,10 +64,12 @@ blogsRouter.get('/:id', async (request, response) => {
 })
 
 blogsRouter.delete('/:id', userExtractor, async (request, response) => {
-  const decodedToken = jwt.verify(request.token, process.env.SECRET)
-  console.log(decodedToken)
-  const user = await User.findById(decodedToken.id)
+  const reqUser = request.user
+  // console.log(`user in request: ${reqUser}`)
+  const user = await User.findById(reqUser)
+  // console.log(`user.findbyid: ${user._id}`)
   const blog = await Blog.findById(request.params.id)
+  // console.log(`blog.user.tostring: ${blog.user.toString()}`)
   if ( blog.user.toString() === user._id.toString() ) {
     await Blog.findByIdAndRemove(request.params.id)
     response.status(204).end()
@@ -77,21 +80,33 @@ blogsRouter.delete('/:id', userExtractor, async (request, response) => {
   }
 })
 
-blogsRouter.put('/:id', async (request, response) => {
+blogsRouter.put('/:id', userExtractor, async (request, response) => {
+  const user = request.user
   const id = request.params.id
-  let oldBody = await Blog.findById(id)
+  const oldBody = await Blog.findById(id)
   if (oldBody === null) {
     response.status(404).send( {
       message: 'cant find the blog',
     })
+  } else if (user) {
+    const blog = {
+      title: oldBody.title,
+      author: oldBody.author,
+      url: oldBody.url,
+      likes: oldBody.likes + 1,
+      user: oldBody.user,
+
+    }
+    // const newBody = {...}
+    console.log(blog)
+    await Blog.findByIdAndUpdate(id, blog,
+      { new: true, runValidators: true, context: 'query' })
+    response.status(202).json(blog)
+  } else {
+    response.status(403).send({
+      message: '403: Forbidden',
+    })
   }
-  oldBody = oldBody.toObject()
-  const newBody = { ...oldBody, likes: request.body.likes }
-  console.log(newBody)
-  // const newBody = {...}
-  await Blog.findByIdAndUpdate(id, newBody,
-    { new: true, runValidators: true, context: 'query' })
-  response.status(202).json(newBody)
 })
 
 module.exports = blogsRouter
